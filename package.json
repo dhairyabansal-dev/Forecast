@@ -1,0 +1,12 @@
+{
+  "name": "network-threat-forecast",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["frontend"],
+  "scripts": {
+    "build": "npm --prefix frontend run build"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
