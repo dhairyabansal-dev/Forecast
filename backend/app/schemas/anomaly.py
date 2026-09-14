@@ -25,6 +25,7 @@ class AnomalyCreate(BaseModel):
     flow_id: str
     src_ip: str
     dst_ip: str
+    feature_vector: list[float] = Field(..., min_length=1)
     src_port: Optional[int] = Field(None, ge=0, le=65535)
     dst_port: Optional[int] = Field(None, ge=0, le=65535)
     protocol: Optional[str] = None
