@@ -8,6 +8,7 @@ import torch
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
+from app.core.config import settings
 from network_engine.capture import NetworkCapture
 from network_engine.flow_tracker import FlowTracker
 from network_engine.state_bridge import flows_to_state_trajectory
@@ -72,8 +73,11 @@ def generate_synthetic_fallback():
     return generate_synthetic_trajectory()
 
 
-def load_trained_model():
-    model_path = ROOT_DIR / "models" / "network_world_model.pth"
+def load_trained_model(model_path: str | Path | None = None):
+    configured_path = Path(model_path or settings.WORLD_MODEL_PATH)
+    if not configured_path.is_absolute():
+        configured_path = ROOT_DIR / configured_path
+    model_path = configured_path.resolve()
 
     if not model_path.exists():
         raise FileNotFoundError(f"Trained model not found: {model_path}")
