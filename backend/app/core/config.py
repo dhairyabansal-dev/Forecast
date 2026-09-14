@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     DEBUG: bool = False
     SECRET_KEY: str = ""
+    VERCEL: bool = False
 
     # API
     API_V1_PREFIX: str = "/api/v1"
