@@ -12,6 +12,7 @@ RUN pip install --upgrade pip && pip install -r /app/backend/requirements.txt
 
 COPY backend /app/backend
 COPY ml_engine /app/ml_engine
+COPY models /app/models
 COPY network_engine /app/network_engine
 COPY mitre-engine /app/mitre-engine
 COPY threat-intelligence /app/threat-intelligence
