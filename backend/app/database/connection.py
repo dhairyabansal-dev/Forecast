@@ -23,9 +23,6 @@ def _async_database_url(url: str) -> str:
 
 DATABASE_URL = _async_database_url(settings.DATABASE_URL)
 
-# Vercel Functions are short-lived and may create many concurrent instances.
-# Keep the per-instance pool intentionally small and avoid creating tables during
-# cold starts; schema changes should be handled by migrations/deployment tooling.
 engine = create_async_engine(
     DATABASE_URL,
     echo=settings.DEBUG,
@@ -66,8 +63,8 @@ async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Retained for local development; Vercel must not create schema on startup."""
-    if settings.APP_ENV.lower() in {"production", "prod", "vercel"}:
+    """Create ORM tables only for local development."""
+    if settings.VERCEL or settings.APP_ENV.lower() in {"production", "prod", "vercel"}:
         return
 
     from app.models.anomaly import Anomaly, ThreatAnomalyLink  # noqa: F401
