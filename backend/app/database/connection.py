@@ -9,11 +9,22 @@ from app.core.config import settings
 
 class Base(DeclarativeBase):
     """Base class for all ORM models."""
-    pass
 
+
+def _async_database_url(url: str) -> str:
+    """Normalize common PostgreSQL URLs for SQLAlchemy asyncpg."""
+    normalized = url.strip()
+    if normalized.startswith("postgres://"):
+        return "postgresql+asyncpg://" + normalized[len("postgres://") :]
+    if normalized.startswith("postgresql://"):
+        return "postgresql+asyncpg://" + normalized[len("postgresql://") :]
+    return normalized
+
+
+DATABASE_URL = _async_database_url(settings.DATABASE_URL)
 
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    DATABASE_URL,
     echo=settings.DEBUG,
     pool_pre_ping=True,
     pool_size=10,
@@ -36,13 +47,11 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
-        finally:
-            await session.close()
 
 
 @asynccontextmanager
 async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
-    """Context manager for using a DB session outside of FastAPI's DI (e.g. in scripts, pipelines)."""
+    """Use a DB session outside FastAPI dependency injection."""
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -50,16 +59,20 @@ async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
-        finally:
-            await session.close()
 
 
 async def init_db() -> None:
-    """Create all tables. Used at startup in dev; use Alembic migrations in production."""
+    """Create ORM tables when the application starts."""
+    # Import models explicitly so every mapped table is registered on Base.metadata.
+    from app.models.anomaly import Anomaly, ThreatAnomalyLink  # noqa: F401
+    from app.models.evidence import Evidence  # noqa: F401
+    from app.models.forecast import Forecast  # noqa: F401
+    from app.models.threat import Threat  # noqa: F401
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
 
 async def close_db() -> None:
-    """Dispose of the engine's connection pool on app shutdown."""
+    """Dispose of the engine's connection pool on application shutdown."""
     await engine.dispose()
