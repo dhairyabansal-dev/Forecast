@@ -1,7 +1,9 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
 from app.schemas.anomaly import AnomalyCreate
+from app.services.blockchain_service import BlockchainService
 from app.utils.hashing import hash_json
 
 
@@ -34,3 +36,14 @@ def test_hash_json_is_deterministic():
     payload = {"b": 2, "a": 1}
     assert hash_json(payload) == hash_json({"a": 1, "b": 2})
     assert len(hash_json(payload)) == 64
+
+
+def test_blockchain_hash_validation():
+    valid_hash = "a" * 64
+    assert BlockchainService._hash_bytes(valid_hash) == bytes.fromhex(valid_hash)
+    assert BlockchainService._hash_bytes("0x" + valid_hash) == bytes.fromhex(valid_hash)
+
+    with pytest.raises(ValueError):
+        BlockchainService._hash_bytes("invalid")
+    with pytest.raises(ValueError):
+        BlockchainService._hash_bytes("z" * 64)
