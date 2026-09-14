@@ -4,7 +4,6 @@ from typing import List
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -19,19 +18,27 @@ class Settings(BaseSettings):
     # App
     APP_NAME: str = "NetworkThreatForecast"
     APP_ENV: str = "development"
-    DEBUG: bool = True
-    SECRET_KEY: str = "insecure-dev-key-change-me"
+    DEBUG: bool = False
+    SECRET_KEY: str = ""
 
     # API
     API_V1_PREFIX: str = "/api/v1"
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    BACKEND_CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ]
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://ntf_user:ntf_password@localhost:5432/ntf_db"
 
     # ML Engine
-    ANOMALY_MODEL_PATH: str = str(PROJECT_ROOT / "ml_engine" / "saved_models" / "anomaly_model.pkl")
-    TEMPORAL_MODEL_PATH: str = str(PROJECT_ROOT / "ml_engine" / "saved_models" / "temporal_model.pt")
+    ANOMALY_MODEL_PATH: str = str(
+        PROJECT_ROOT / "ml_engine" / "saved_models" / "anomaly_model.pkl"
+    )
+    TEMPORAL_MODEL_PATH: str = str(
+        PROJECT_ROOT / "ml_engine" / "saved_models" / "temporal_model.pt"
+    )
+    WORLD_MODEL_PATH: str = str(PROJECT_ROOT / "models" / "network_world_model.pth")
     FORECAST_HORIZON: int = 24
     SEQUENCE_LENGTH: int = 48
 
@@ -44,6 +51,7 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/app.log"
+
 
 @lru_cache
 def get_settings() -> Settings:

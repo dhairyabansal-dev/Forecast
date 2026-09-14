@@ -6,8 +6,11 @@ from pathlib import Path
 import torch
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+BACKEND_DIR = ROOT_DIR / "backend"
 sys.path.insert(0, str(ROOT_DIR))
+sys.path.insert(0, str(BACKEND_DIR))
 
+from app.core.config import settings
 from network_engine.capture import NetworkCapture
 from network_engine.flow_tracker import FlowTracker
 from network_engine.state_bridge import flows_to_state_trajectory
@@ -72,8 +75,11 @@ def generate_synthetic_fallback():
     return generate_synthetic_trajectory()
 
 
-def load_trained_model():
-    model_path = ROOT_DIR / "models" / "network_world_model.pth"
+def load_trained_model(model_path: str | Path | None = None):
+    configured_path = Path(model_path or settings.WORLD_MODEL_PATH)
+    if not configured_path.is_absolute():
+        configured_path = ROOT_DIR / configured_path
+    model_path = configured_path.resolve()
 
     if not model_path.exists():
         raise FileNotFoundError(f"Trained model not found: {model_path}")
@@ -179,69 +185,36 @@ def load_trained_model():
 
 
 def print_report(predicted_states, risk_scores, stages, attributions):
-
     print("\n=== K-Step Forward Simulation ===")
     print(
         f"Risk distribution: min={risk_scores.min():.4f}, "
         f"max={risk_scores.max():.4f}, mean={risk_scores.mean():.4f}, "
         f"std={risk_scores.std():.4f}"
     )
-
     print(
         f"{'Step':<8}"
         f"{'Infiltration Risk':<22}"
         f"{'Predicted Stage':<25}"
         f"{'Confidence':<12}"
     )
-
     print("-" * 70)
-
     for i in range(len(predicted_states)):
-
         print(
             f"t+{i+1:<6}"
             f"{risk_scores[i] * 100:>6.1f}%{'':<15}"
             f"{stages[i]['predicted_stage']:<25}"
             f"{stages[i]['confidence'] * 100:.1f}%"
         )
-
     print("\n=== Explainability ===")
-
-    for dim, val in sorted(
-        attributions.items(),
-        key=lambda kv: abs(kv[1]),
-        reverse=True
-    ):
-
-        print(
-            f"  {dim:<25} {val:+.4f}"
-        )
+    for dim, val in sorted(attributions.items(), key=lambda kv: abs(kv[1]), reverse=True):
+        print(f"  {dim:<25} {val:+.4f}")
 
 
 def main():
-
-    parser = argparse.ArgumentParser(
-        description="Live-capture trained network world model demo"
-    )
-
-    parser.add_argument(
-        "--duration",
-        type=int,
-        default=12
-    )
-
-    parser.add_argument(
-        "--window",
-        type=int,
-        default=10
-    )
-
-    parser.add_argument(
-        "--k",
-        type=int,
-        default=10
-    )
-
+    parser = argparse.ArgumentParser(description="Live-capture trained network world model demo")
+    parser.add_argument("--duration", type=int, default=12)
+    parser.add_argument("--window", type=int, default=10)
+    parser.add_argument("--k", type=int, default=10)
     args = parser.parse_args()
 
     flows = try_live_capture(args.duration)
@@ -257,50 +230,19 @@ def main():
         )
 
     if len(trajectory) < args.window:
-
         args.window = max(2, len(trajectory))
 
     window = trajectory[-args.window:]
-
-    print(
-        f"\n[+] Input trajectory shape: {trajectory.shape}"
-    )
-
-    print(
-        f"[+] Model window size: {len(window)}"
-    )
+    print(f"\n[+] Input trajectory shape: {trajectory.shape}")
+    print(f"[+] Model window size: {len(window)}")
 
     model = load_trained_model()
+    predicted_states, risk_scores = rollout_k_steps(model, window, k=args.k)
+    stages = map_rollout_to_stages(predicted_states)
+    attributions = perturbation_attribution(model, window, k=1)
 
-    rollout = rollout_k_steps(
-        model,
-        window,
-        k=args.k
-    )
-    predicted_states = rollout[0]
-    risk_scores = rollout[1]
-
-    stages = map_rollout_to_stages(
-        predicted_states
-    )
-
-    attributions = perturbation_attribution(
-        model,
-        window,
-        k=1
-    )
-
-    print_report(
-        predicted_states,
-        risk_scores,
-        stages,
-        attributions
-    )
-
-    print(
-        f"\nSummary: "
-        f"{summarize_attribution(attributions)}"
-    )
+    print_report(predicted_states, risk_scores, stages, attributions)
+    print(f"\nSummary: {summarize_attribution(attributions)}")
 
 
 if __name__ == "__main__":

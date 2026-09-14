@@ -29,17 +29,20 @@ secrets.json
 # Data
 data/raw/pcaps/*
 data/raw/datasets/*
+data/raw/CSE-CIC-IDS2018/*
 data/processed/*
 !data/raw/pcaps/.gitkeep
 !data/raw/datasets/.gitkeep
 !data/processed/.gitkeep
 
-# ML models
-ml-engine/saved_models/*.pkl
-ml-engine/saved_models/*.pt
-!ml-engine/saved_models/.gitkeep
+# ML model artifacts
+ml_engine/saved_models/*
+models/*
+!ml_engine/saved_models/.gitkeep
+!models/.gitkeep
 
 # Node / Frontend
+node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
@@ -58,32 +61,13 @@ logs/
 # Docker
 *.pid
 
-# Blockchain
+# Blockchain generated state
 blockchain/cache/
 blockchain/artifacts/
 
-# Node
-node_modules/
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
-npm-debug.log*
-
-# ML / model artifacts
-ml_engine/saved_models/*
-models/*
-!ml_engine/saved_models/.gitkeep
-!models/.gitkeep
-
-# Datasets
-data/raw/pcaps/*
-data/raw/datasets/*
-data/raw/CSE-CIC-IDS2018/*
-!data/raw/pcaps/.gitkeep
-!data/raw/datasets/.gitkeep
-
-# Archives
+# Archives / generated structure dumps
 *.zip
+project_structure.txt
 
 # AI/editor tooling
 .agents/

@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 from typing import Optional
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.evidence import Evidence
+from app.utils.helpers import utc_now
 
 
 class EvidenceRepository:
@@ -48,13 +50,13 @@ class EvidenceRepository:
 
         items = list(result.scalars().all())
         total = total_result.scalar_one()
-
         return items, total
 
     async def update(self, evidence: Evidence, **fields) -> Evidence:
         for key, value in fields.items():
             if value is not None:
                 setattr(evidence, key, value)
+        evidence.updated_at = utc_now()
         await self.session.commit()
         await self.session.refresh(evidence)
         return evidence

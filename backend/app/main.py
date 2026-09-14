@@ -13,11 +13,20 @@ from app.utils.logger import app_logger
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app_logger.info(f"Starting {settings.APP_NAME} ({settings.APP_ENV})")
+
+    if settings.APP_ENV.lower() in {"production", "prod"}:
+        if not settings.SECRET_KEY or settings.SECRET_KEY == "change_this_to_a_random_secret_key":
+            raise RuntimeError("SECRET_KEY must be configured in production")
+        if settings.DEBUG:
+            raise RuntimeError("DEBUG must be false in production")
+
     await init_db()
-    yield
-    live_forecast_service.shutdown()
-    app_logger.info("Shutting down, closing DB connections...")
-    await close_db()
+    try:
+        yield
+    finally:
+        live_forecast_service.shutdown()
+        app_logger.info("Shutting down, closing DB connections...")
+        await close_db()
 
 
 app = FastAPI(

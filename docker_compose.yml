@@ -14,15 +14,15 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ntf_user}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ntf_user} -d ${POSTGRES_DB:-ntf_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: ntf_backend
     restart: unless-stopped
     env_file:
@@ -33,23 +33,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./backend:/app
-      - ./ml-engine:/app/ml-engine
-      - ./data:/app/data
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: ntf_frontend
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - ./logs:/app/logs
 
 volumes:
   postgres_data:

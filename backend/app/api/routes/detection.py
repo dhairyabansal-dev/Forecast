@@ -11,7 +11,6 @@ from app.schemas.anomaly import (
     AnomalyUpdate,
 )
 from app.services.detection_service import DetectionService
-from app.utils.helpers import paginate
 
 router = APIRouter(prefix="/detection", tags=["Detection"])
 
@@ -19,14 +18,13 @@ router = APIRouter(prefix="/detection", tags=["Detection"])
 @router.post("/analyze", response_model=AnomalyResponse, status_code=201)
 async def analyze_flow(
     payload: AnomalyCreate,
-    feature_vector: list[float] = Query(..., description="Precomputed feature vector for this flow"),
     service: DetectionService = Depends(get_detection_service),
 ):
     anomaly = await service.detect_and_store(
         flow_id=payload.flow_id,
         src_ip=payload.src_ip,
         dst_ip=payload.dst_ip,
-        feature_vector=feature_vector,
+        feature_vector=payload.feature_vector,
         raw_features=payload.raw_features,
         src_port=payload.src_port,
         dst_port=payload.dst_port,
@@ -45,7 +43,11 @@ async def list_anomalies(
     service: DetectionService = Depends(get_detection_service),
 ):
     items, total = await service.list_anomalies(
-        page=page, page_size=page_size, is_anomalous=is_anomalous, status=status, src_ip=src_ip
+        page=page,
+        page_size=page_size,
+        is_anomalous=is_anomalous,
+        status=status,
+        src_ip=src_ip,
     )
     return AnomalyListResponse(
         items=items,
@@ -57,7 +59,10 @@ async def list_anomalies(
 
 
 @router.get("/anomalies/{anomaly_id}", response_model=AnomalyResponse)
-async def get_anomaly(anomaly_id: str, service: DetectionService = Depends(get_detection_service)):
+async def get_anomaly(
+    anomaly_id: str,
+    service: DetectionService = Depends(get_detection_service),
+):
     anomaly = await service.get_anomaly(anomaly_id)
     if anomaly is None:
         raise HTTPException(status_code=404, detail="Anomaly not found")
@@ -71,7 +76,9 @@ async def update_anomaly(
     service: DetectionService = Depends(get_detection_service),
 ):
     updated = await service.update_status(
-        anomaly_id, status=payload.status.value if payload.status else None, notes=payload.analyst_notes
+        anomaly_id,
+        status=payload.status.value if payload.status else None,
+        notes=payload.analyst_notes,
     )
     if updated is None:
         raise HTTPException(status_code=404, detail="Anomaly not found")
