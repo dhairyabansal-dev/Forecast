@@ -5,16 +5,19 @@ from app.schemas.anomaly import AnomalyCreate
 from app.utils.hashing import hash_json
 
 
-def test_root_endpoint():
-    response = TestClient(app).get("/")
-    assert response.status_code == 200
-    assert response.json()["status"] == "running"
+def test_root_and_health_endpoints_with_lifespan():
+    with TestClient(app) as client:
+        root = client.get("/")
+        assert root.status_code == 200
+        assert root.json()["status"] == "running"
 
+        health = client.get("/api/v1/health")
+        assert health.status_code == 200
+        assert health.json()["status"] == "ok"
 
-def test_health_endpoint():
-    response = TestClient(app).get("/api/v1/health")
-    assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+        database = client.get("/api/v1/health/db")
+        assert database.status_code == 200
+        assert database.json()["database"] == "connected"
 
 
 def test_anomaly_create_schema_requires_features():
