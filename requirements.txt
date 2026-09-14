@@ -6,7 +6,6 @@ PyJWT==2.9.0
 
 sqlalchemy==2.0.35
 asyncpg==0.29.0
-aiosqlite==0.20.0
 
 numpy==1.26.4
 scikit-learn==1.5.2
