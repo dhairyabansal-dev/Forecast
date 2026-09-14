@@ -25,19 +25,18 @@ THREAT_EVIDENCE_ABI = [
 
 
 class BlockchainService:
-    """Anchor evidence hashes on-chain, with a deterministic hosted demo fallback."""
+    """Anchor evidence content hashes on-chain for tamper-evident storage."""
 
     def __init__(self):
         self.w3 = Web3(Web3.HTTPProvider(settings.BLOCKCHAIN_PROVIDER_URL))
         self._contract = None
         self._account = None
-        self._demo_anchors: set[str] = set()
 
         if settings.BLOCKCHAIN_PRIVATE_KEY:
             try:
                 self._account = Account.from_key(settings.BLOCKCHAIN_PRIVATE_KEY)
             except (TypeError, ValueError) as exc:
-                app_logger.warning(f"Invalid blockchain private key; blockchain writes disabled: {exc}")
+                app_logger.warning("Invalid blockchain private key; blockchain writes disabled: %s", exc)
 
     @property
     def contract(self):
@@ -47,7 +46,7 @@ class BlockchainService:
                     settings.THREAT_EVIDENCE_CONTRACT_ADDRESS.strip()
                 )
             except ValueError as exc:
-                app_logger.warning(f"Invalid blockchain contract address: {exc}")
+                app_logger.warning("Invalid blockchain contract address: %s", exc)
                 return None
 
             self._contract = self.w3.eth.contract(
@@ -57,10 +56,6 @@ class BlockchainService:
         return self._contract
 
     def is_connected(self) -> bool:
-        if self.contract is None and settings.VERCEL:
-            # Hosted demo mode intentionally exposes a working evidence flow
-            # without requiring a private blockchain node or wallet secret.
-            return True
         try:
             return self.w3.is_connected()
         except Exception:
@@ -79,20 +74,14 @@ class BlockchainService:
             raise ValueError("Evidence hash must contain only hexadecimal characters") from exc
 
     def compute_evidence_hash(self, payload: dict) -> str:
+        """Return the SHA-256 hex digest stored by the evidence schema."""
         return hash_json(payload)
 
     def anchor_evidence(self, content_hash: str) -> dict:
-        if self.contract is None or self._account is None:
-            if settings.VERCEL:
-                normalized = content_hash.lower().replace("0x", "")
-                self._demo_anchors.add(normalized)
-                return {
-                    "tx_hash": "0x" + normalized[:64],
-                    "block_number": 1,
-                    "anchored_at": utc_now(),
-                }
-            if self.contract is None:
-                raise RuntimeError("Blockchain contract not configured (missing address).")
+        """Submit a transaction anchoring the given content hash on-chain."""
+        if self.contract is None:
+            raise RuntimeError("Blockchain contract not configured (missing address).")
+        if self._account is None:
             raise RuntimeError("Blockchain private key not configured.")
 
         hash_bytes = self._hash_bytes(content_hash)
@@ -120,10 +109,8 @@ class BlockchainService:
         }
 
     def verify_evidence(self, content_hash: str) -> bool:
+        """Check whether a given content hash is anchored on-chain."""
         if self.contract is None:
-            if settings.VERCEL:
-                normalized = content_hash.lower().replace("0x", "")
-                return normalized in self._demo_anchors
             raise RuntimeError("Blockchain contract not configured (missing address).")
 
         hash_bytes = self._hash_bytes(content_hash)
