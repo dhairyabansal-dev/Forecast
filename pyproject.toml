@@ -1,0 +1,5 @@
+[project]
+name = "network-threat-forecast"
+version = "1.0.0"
+description = "Network Threat Forecast FastAPI backend"
+requires-python = "~=3.12.0"
