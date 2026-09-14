@@ -1,0 +1,72 @@
+{
+  "T1046": {
+    "name": "Network Service Discovery",
+    "tactic": "discovery",
+    "indicators": ["port_scan", "high_connection_rate", "sequential_ports"]
+  },
+  "T1071": {
+    "name": "Application Layer Protocol",
+    "tactic": "command-and-control",
+    "indicators": ["unusual_http_pattern", "beaconing", "non_standard_port_http"]
+  },
+  "T1071.001": {
+    "name": "Web Protocols",
+    "tactic": "command-and-control",
+    "indicators": ["beaconing", "http_periodic_requests"]
+  },
+  "T1041": {
+    "name": "Exfiltration Over C2 Channel",
+    "tactic": "exfiltration",
+    "indicators": ["large_outbound_transfer", "asymmetric_byte_ratio"]
+  },
+  "T1499": {
+    "name": "Endpoint Denial of Service",
+    "tactic": "impact",
+    "indicators": ["high_packet_rate", "syn_flood", "volumetric_traffic"]
+  },
+  "T1498": {
+    "name": "Network Denial of Service",
+    "tactic": "impact",
+    "indicators": ["volumetric_traffic", "distributed_sources", "high_bandwidth_usage"]
+  },
+  "T1590": {
+    "name": "Gather Victim Network Information",
+    "tactic": "reconnaissance",
+    "indicators": ["port_scan", "dns_enumeration", "banner_grabbing"]
+  },
+  "T1595": {
+    "name": "Active Scanning",
+    "tactic": "reconnaissance",
+    "indicators": ["port_scan", "sequential_ports", "high_connection_rate"]
+  },
+  "T1078": {
+    "name": "Valid Accounts",
+    "tactic": "initial-access",
+    "indicators": ["repeated_auth_attempts", "unusual_login_location"]
+  },
+  "T1110": {
+    "name": "Brute Force",
+    "tactic": "credential-access",
+    "indicators": ["repeated_auth_attempts", "high_connection_rate", "sequential_ports"]
+  },
+  "T1021": {
+    "name": "Remote Services",
+    "tactic": "lateral-movement",
+    "indicators": ["internal_lateral_traffic", "unusual_internal_connection"]
+  },
+  "T1020": {
+    "name": "Automated Exfiltration",
+    "tactic": "exfiltration",
+    "indicators": ["large_outbound_transfer", "periodic_transfer", "asymmetric_byte_ratio"]
+  },
+  "T1105": {
+    "name": "Ingress Tool Transfer",
+    "tactic": "command-and-control",
+    "indicators": ["large_inbound_transfer", "unusual_binary_download"]
+  },
+  "T1568": {
+    "name": "Dynamic Resolution",
+    "tactic": "command-and-control",
+    "indicators": ["dga_like_domains", "high_dns_query_rate", "beaconing"]
+  }
+}

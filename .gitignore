@@ -1,0 +1,90 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.env.*
+!.env.example
+
+# Secrets / credentials
+credentials.json
+service-account.json
+secrets.json
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Data
+data/raw/pcaps/*
+data/raw/datasets/*
+data/processed/*
+!data/raw/pcaps/.gitkeep
+!data/raw/datasets/.gitkeep
+!data/processed/.gitkeep
+
+# ML models
+ml-engine/saved_models/*.pkl
+ml-engine/saved_models/*.pt
+!ml-engine/saved_models/.gitkeep
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Docker
+*.pid
+
+# Blockchain
+blockchain/cache/
+blockchain/artifacts/
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# ML / model artifacts
+ml_engine/saved_models/*
+models/*
+!ml_engine/saved_models/.gitkeep
+!models/.gitkeep
+
+# Datasets
+data/raw/pcaps/*
+data/raw/datasets/*
+data/raw/CSE-CIC-IDS2018/*
+!data/raw/pcaps/.gitkeep
+!data/raw/datasets/.gitkeep
+
+# Archives
+*.zip
+
+# AI/editor tooling
+.agents/
+.claude/
