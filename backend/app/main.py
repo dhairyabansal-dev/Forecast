@@ -14,18 +14,16 @@ from app.utils.logger import app_logger
 async def lifespan(app: FastAPI):
     app_logger.info(f"Starting {settings.APP_NAME} ({settings.APP_ENV})")
 
-    if settings.APP_ENV.lower() in {"production", "prod", "vercel"}:
+    if settings.VERCEL or settings.APP_ENV.lower() in {"production", "prod", "vercel"}:
         if not settings.SECRET_KEY or settings.SECRET_KEY == "change_this_to_a_random_secret_key":
             raise RuntimeError("SECRET_KEY must be configured in production")
         if settings.DEBUG:
             raise RuntimeError("DEBUG must be false in production")
 
-    # init_db is a no-op for production/Vercel. Use Alembic for schema management.
     await init_db()
     try:
         yield
     finally:
-        # Do not rely on background work surviving a serverless invocation.
         live_forecast_service.shutdown()
         await close_db()
 
