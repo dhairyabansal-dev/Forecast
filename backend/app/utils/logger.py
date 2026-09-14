@@ -7,10 +7,9 @@ from app.core.config import settings
 
 
 def setup_logger():
-    """Configure loguru logger with console + rotating file sinks."""
-    logger.remove()  # remove default handler
+    """Configure stdout logging; use a file sink only outside Vercel."""
+    logger.remove()
 
-    # Console sink
     logger.add(
         sys.stdout,
         level=settings.LOG_LEVEL,
@@ -23,10 +22,11 @@ def setup_logger():
         colorize=True,
     )
 
-    # File sink
+    if settings.VERCEL or settings.APP_ENV.lower() in {"production", "prod", "vercel"}:
+        return logger
+
     log_path = Path(settings.LOG_FILE)
     log_path.parent.mkdir(parents=True, exist_ok=True)
-
     logger.add(
         log_path,
         level=settings.LOG_LEVEL,
@@ -37,7 +37,6 @@ def setup_logger():
         backtrace=True,
         diagnose=settings.DEBUG,
     )
-
     return logger
 
 
