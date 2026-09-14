@@ -1,0 +1,2 @@
+# Vercel backend dependency entrypoint
+-r backend/requirements.txt
