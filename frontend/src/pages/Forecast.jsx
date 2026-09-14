@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { TrendingUp, Radio } from "lucide-react";
+import { TrendingUp, Sparkles } from "lucide-react";
 import ThreatLevelChart from "../components/charts/ThreatLevelChart.jsx";
 import StatCard from "../components/StatCard.jsx";
-import { getLatestForecast, startLiveForecast, getLiveForecastStatus } from "../services/api.js";
+import { generateForecast, getLatestForecast } from "../services/api.js";
 
 export default function Forecast() {
   const [forecast, setForecast] = useState(null);
   const [loading, setLoading] = useState(true);
   const [horizon, setHorizon] = useState(24);
   const [error, setError] = useState(null);
-  const [capturing, setCapturing] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   async function loadLatest() {
     setLoading(true);
@@ -27,25 +27,20 @@ export default function Forecast() {
     loadLatest();
   }, []);
 
-  async function handleLiveForecast() {
-    setCapturing(true);
+  async function handleGenerateForecast() {
+    setGenerating(true);
     setError(null);
     try {
-      const job = await startLiveForecast({ forecast_steps: horizon });
-      let status = job;
-      while (status.status !== "completed" && status.status !== "failed") {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        status = await getLiveForecastStatus(job.job_id);
-      }
-      if (status.status === "failed") {
-        throw new Error(status.error || "Live forecast failed");
-      }
-      setForecast(await getLatestForecast());
+      const data = await generateForecast({
+        horizon_hours: horizon,
+        sequence_length: 48,
+      });
+      setForecast(data);
     } catch (err) {
       const detail = err?.response?.data?.detail;
       setError(Array.isArray(detail) ? detail.map((d) => d.msg).join(", ") : detail || err.message);
     } finally {
-      setCapturing(false);
+      setGenerating(false);
     }
   }
 
@@ -72,9 +67,9 @@ export default function Forecast() {
             <option value={48}>48 hours</option>
             <option value={72}>72 hours</option>
           </select>
-          <button className="btn" onClick={handleLiveForecast} disabled={capturing}>
-            <Radio size={14} style={{ verticalAlign: "middle", marginRight: 6 }} />
-            {capturing ? "Capturing…" : "Capture Live Forecast"}
+          <button className="btn" onClick={handleGenerateForecast} disabled={generating}>
+            <Sparkles size={14} style={{ verticalAlign: "middle", marginRight: 6 }} />
+            {generating ? "Generating…" : "Generate Forecast"}
           </button>
         </div>
       </div>
@@ -87,7 +82,7 @@ export default function Forecast() {
         <div className="card">
           <div className="loading-text">
             <TrendingUp size={20} style={{ verticalAlign: "middle", marginRight: 8 }} />
-            No forecast yet — click "Generate New Forecast" to run the model.
+            No forecast yet — click "Generate Forecast" to create one.
           </div>
         </div>
       ) : (
@@ -103,10 +98,6 @@ export default function Forecast() {
             <StatCard
               title="Predicted Stage"
               value={forecast.points?.[0]?.predicted_stage || "Unavailable"}
-            />
-            <StatCard
-              title="Generated"
-              value={new Date(forecast.generated_at).toLocaleTimeString()}
             />
           </div>
 
