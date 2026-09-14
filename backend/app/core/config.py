@@ -30,7 +30,10 @@ class Settings(BaseSettings):
     ]
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://ntf_user:ntf_password@localhost:5432/ntf_db"
+    # PostgreSQL is used automatically when DATABASE_URL is supplied. The
+    # SQLite fallback keeps the hosted demo self-contained when no external
+    # database has been configured yet.
+    DATABASE_URL: str = "sqlite+aiosqlite:///:memory:"
 
     # ML Engine
     ANOMALY_MODEL_PATH: str = str(
