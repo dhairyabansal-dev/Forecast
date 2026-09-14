@@ -1,5 +1,3 @@
-from typing import Optional
-
 from eth_account import Account
 from web3 import Web3
 
@@ -35,13 +33,24 @@ class BlockchainService:
         self._account = None
 
         if settings.BLOCKCHAIN_PRIVATE_KEY:
-            self._account = Account.from_key(settings.BLOCKCHAIN_PRIVATE_KEY)
+            try:
+                self._account = Account.from_key(settings.BLOCKCHAIN_PRIVATE_KEY)
+            except (TypeError, ValueError) as exc:
+                app_logger.warning("Invalid blockchain private key; blockchain writes disabled: %s", exc)
 
     @property
     def contract(self):
         if self._contract is None and settings.THREAT_EVIDENCE_CONTRACT_ADDRESS:
+            try:
+                address = Web3.to_checksum_address(
+                    settings.THREAT_EVIDENCE_CONTRACT_ADDRESS.strip()
+                )
+            except ValueError as exc:
+                app_logger.warning("Invalid blockchain contract address: %s", exc)
+                return None
+
             self._contract = self.w3.eth.contract(
-                address=Web3.to_checksum_address(settings.THREAT_EVIDENCE_CONTRACT_ADDRESS),
+                address=address,
                 abi=THREAT_EVIDENCE_ABI,
             )
         return self._contract
