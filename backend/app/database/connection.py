@@ -23,12 +23,16 @@ def _async_database_url(url: str) -> str:
 
 DATABASE_URL = _async_database_url(settings.DATABASE_URL)
 
+# Vercel Functions are short-lived and may create many concurrent instances.
+# Keep the per-instance pool intentionally small and avoid creating tables during
+# cold starts; schema changes should be handled by migrations/deployment tooling.
 engine = create_async_engine(
     DATABASE_URL,
     echo=settings.DEBUG,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=1,
+    max_overflow=0,
+    pool_recycle=300,
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -62,8 +66,10 @@ async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Create ORM tables when the application starts."""
-    # Import models explicitly so every mapped table is registered on Base.metadata.
+    """Retained for local development; Vercel must not create schema on startup."""
+    if settings.APP_ENV.lower() in {"production", "prod", "vercel"}:
+        return
+
     from app.models.anomaly import Anomaly, ThreatAnomalyLink  # noqa: F401
     from app.models.evidence import Evidence  # noqa: F401
     from app.models.forecast import Forecast  # noqa: F401
@@ -74,5 +80,5 @@ async def init_db() -> None:
 
 
 async def close_db() -> None:
-    """Dispose of the engine's connection pool on application shutdown."""
+    """Dispose of the engine pool when the process shuts down."""
     await engine.dispose()
