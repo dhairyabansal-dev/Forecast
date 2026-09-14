@@ -7,10 +7,14 @@
     },
     "api": {
       "root": "api/",
-      "entrypoint": "index.py"
+      "entrypoint": "index:app"
     }
   },
   "rewrites": [
+    {
+      "source": "/api",
+      "destination": { "service": "api" }
+    },
     {
       "source": "/api/(.*)",
       "destination": { "service": "api" }
