@@ -2,7 +2,7 @@ name: Backend CI
 
 on:
   push:
-    branches: [main, backend-stabilization]
+    branches: [main, backend-stabilization, backend-ci-fix]
   pull_request:
     branches: [main]
 
@@ -46,6 +46,7 @@ jobs:
       - name: Run backend tests
         working-directory: backend
         env:
+          PYTHONPATH: ${{ github.workspace }}/backend:${{ github.workspace }}
           APP_ENV: test
           DEBUG: "false"
           SECRET_KEY: ci-test-secret
