@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Optional
 
 from eth_account import Account
@@ -9,7 +8,6 @@ from app.utils.hashing import hash_json
 from app.utils.helpers import utc_now
 from app.utils.logger import app_logger
 
-# Minimal ABI for the ThreatEvidence contract: anchor(bytes32) and getRecord(bytes32)
 THREAT_EVIDENCE_ABI = [
     {
         "inputs": [{"internalType": "bytes32", "name": "evidenceHash", "type": "bytes32"}],
@@ -29,7 +27,7 @@ THREAT_EVIDENCE_ABI = [
 
 
 class BlockchainService:
-    """Anchors evidence content hashes on-chain for tamper-evident storage."""
+    """Anchor evidence content hashes on-chain for tamper-evident storage."""
 
     def __init__(self):
         self.w3 = Web3(Web3.HTTPProvider(settings.BLOCKCHAIN_PROVIDER_URL))
@@ -54,22 +52,30 @@ class BlockchainService:
         except Exception:
             return False
 
+    @staticmethod
+    def _hash_bytes(content_hash: str) -> bytes:
+        normalized = content_hash.strip().lower()
+        if normalized.startswith("0x"):
+            normalized = normalized[2:]
+        if len(normalized) != 64:
+            raise ValueError("Evidence hash must be exactly 64 hexadecimal characters")
+        try:
+            return bytes.fromhex(normalized)
+        except ValueError as exc:
+            raise ValueError("Evidence hash must contain only hexadecimal characters") from exc
+
     def compute_evidence_hash(self, payload: dict) -> str:
-        """Returns the 64-character SHA-256 hex digest stored by the evidence schema."""
+        """Return the SHA-256 hex digest stored by the evidence schema."""
         return hash_json(payload)
 
     def anchor_evidence(self, content_hash: str) -> dict:
-        """
-        Submit a transaction anchoring the given content hash on-chain.
-        Returns tx_hash, block_number, anchored_at. Requires contract + private key configured.
-        """
+        """Submit a transaction anchoring the given content hash on-chain."""
         if self.contract is None:
             raise RuntimeError("Blockchain contract not configured (missing address).")
         if self._account is None:
             raise RuntimeError("Blockchain private key not configured.")
 
-        hash_bytes = bytes.fromhex(content_hash.replace("0x", ""))
-
+        hash_bytes = self._hash_bytes(content_hash)
         nonce = self.w3.eth.get_transaction_count(self._account.address)
         tx = self.contract.functions.anchorEvidence(hash_bytes).build_transaction({
             "from": self._account.address,
@@ -83,7 +89,9 @@ class BlockchainService:
         tx_hash = self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
         receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
 
-        app_logger.info(f"Evidence anchored on-chain: tx={tx_hash.hex()} block={receipt.blockNumber}")
+        app_logger.info(
+            f"Evidence anchored on-chain: tx={tx_hash.hex()} block={receipt.blockNumber}"
+        )
 
         return {
             "tx_hash": tx_hash.hex(),
@@ -96,5 +104,5 @@ class BlockchainService:
         if self.contract is None:
             raise RuntimeError("Blockchain contract not configured (missing address).")
 
-        hash_bytes = bytes.fromhex(content_hash.replace("0x", ""))
+        hash_bytes = self._hash_bytes(content_hash)
         return self.contract.functions.isAnchored(hash_bytes).call()
