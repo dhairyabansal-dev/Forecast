@@ -2,17 +2,8 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "/api/v1",
-  withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) window.dispatchEvent(new Event("foreflow:session-expired"));
-    return Promise.reject(error);
-  },
-);
 
 export const getHealth = () => api.get("/health").then((r) => r.data);
 export const getDbHealth = () => api.get("/health/db").then((r) => r.data);
