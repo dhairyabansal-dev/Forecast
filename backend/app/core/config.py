@@ -15,41 +15,35 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # App
     APP_NAME: str = "NetworkThreatForecast"
     APP_ENV: str = "development"
     DEBUG: bool = False
     SECRET_KEY: str = ""
     VERCEL: bool = False
 
-    # API
     API_V1_PREFIX: str = "/api/v1"
-    BACKEND_CORS_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-    ]
+    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
 
-    # Database
-    DATABASE_URL: str = "postgresql+asyncpg://ntf_user:ntf_password@localhost:5432/ntf_db"
+    DATABASE_URL: str = ""
 
-    # ML Engine
-    ANOMALY_MODEL_PATH: str = str(
-        PROJECT_ROOT / "ml_engine" / "saved_models" / "anomaly_model.pkl"
-    )
-    TEMPORAL_MODEL_PATH: str = str(
-        PROJECT_ROOT / "ml_engine" / "saved_models" / "temporal_model.pt"
-    )
+    # Authentication
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 12
+    AUTH_COOKIE_NAME: str = "foreflow_session"
+    AUTH_COOKIE_SECURE: bool = False
+    ADMIN_EMAIL: str = ""
+    ADMIN_PASSWORD: str = ""
+
+    ANOMALY_MODEL_PATH: str = str(PROJECT_ROOT / "ml_engine" / "saved_models" / "anomaly_model.pkl")
+    TEMPORAL_MODEL_PATH: str = str(PROJECT_ROOT / "ml_engine" / "saved_models" / "temporal_model.pt")
     WORLD_MODEL_PATH: str = str(PROJECT_ROOT / "models" / "network_world_model.pth")
     FORECAST_HORIZON: int = 24
     SEQUENCE_LENGTH: int = 48
 
-    # Blockchain
     BLOCKCHAIN_PROVIDER_URL: str = "http://localhost:8545"
     BLOCKCHAIN_CHAIN_ID: int = 1337
     BLOCKCHAIN_PRIVATE_KEY: str = ""
     THREAT_EVIDENCE_CONTRACT_ADDRESS: str = ""
 
-    # Logging
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/app.log"
 
