@@ -6,8 +6,8 @@
       "framework": "vite"
     },
     "api": {
-      "root": "api/",
-      "entrypoint": "index:app"
+      "root": ".",
+      "entrypoint": "api/index.py"
     }
   },
   "rewrites": [
