@@ -2,9 +2,9 @@ from typing import Optional
 
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_current_user, get_forecast_service, require_roles
-from app.core.config import settings
+from app.api.dependencies import get_current_user, get_db_session, get_forecast_service, require_roles
 from app.core.constants import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
 from app.models.user import User
 from app.schemas.forecast import ForecastListResponse, ForecastRequest, ForecastResponse, LiveForecastRequest, LiveForecastStartResponse, LiveForecastStatusResponse
@@ -25,13 +25,10 @@ async def get_live_forecast_status(job_id: str, user: User = Depends(get_current
 
 
 @router.post("/generate", response_model=ForecastResponse, status_code=201)
-async def generate_forecast(
-    payload: ForecastRequest,
-    user: User = Depends(require_roles("ADMIN", "DATA_SCIENTIST", "ANALYST")),
-    service: ForecastService = Depends(get_forecast_service),
-):
+async def generate_forecast(payload: ForecastRequest, user: User = Depends(require_roles("ADMIN", "DATA_SCIENTIST", "ANALYST")), service: ForecastService = Depends(get_forecast_service), session: AsyncSession = Depends(get_db_session)):
     sequence = np.zeros((payload.sequence_length, 1), dtype=np.float32)
     result = await service.generate_forecast(historical_sequence=sequence, network_segment=payload.network_segment, horizon_hours=payload.horizon_hours, sequence_length=payload.sequence_length)
+    await record_audit(session, action="FORECAST_EXECUTION", status="SUCCESS", user_id=user.id, resource=getattr(result, "id", None), metadata={"horizon_hours": payload.horizon_hours, "sequence_length": payload.sequence_length})
     return result
 
 
