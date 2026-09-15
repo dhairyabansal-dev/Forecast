@@ -5,6 +5,7 @@ from typing import AsyncGenerator
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
@@ -41,18 +42,23 @@ DATABASE_URL = _resolve_database_url()
 # Do not construct SQLAlchemy's engine with an empty URL. That raises during
 # module import and makes Vercel report the misleading "could not import
 # api/index.py" error. The engine is created only when a database is configured.
-engine = (
-    create_async_engine(
-        DATABASE_URL,
-        echo=settings.DEBUG,
-        pool_pre_ping=True,
-        pool_size=1,
-        max_overflow=0,
-        pool_recycle=300,
-    )
-    if DATABASE_URL
-    else None
-)
+# CI uses multiple asyncio loops while importing/exercising the FastAPI app.
+# NullPool in the test environment prevents asyncpg connections from being
+# retained by SQLAlchemy and later reused by a different event loop. Production
+# keeps the normal pooled engine.
+if DATABASE_URL:
+    engine_kwargs = {
+        "echo": settings.DEBUG,
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
+    if os.getenv("APP_ENV", "").lower() == "test":
+        engine_kwargs["poolclass"] = NullPool
+    else:
+        engine_kwargs.update({"pool_size": 1, "max_overflow": 0})
+    engine = create_async_engine(DATABASE_URL, **engine_kwargs)
+else:
+    engine = None
 
 AsyncSessionLocal = (
     async_sessionmaker(
