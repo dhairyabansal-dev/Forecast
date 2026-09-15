@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -18,9 +20,9 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
     is_active: bool
-    created_at: str
-    updated_at: str
-    last_login_at: str | None
+    created_at: datetime
+    updated_at: datetime
+    last_login_at: datetime | None
 
 
 class RoleUpdateRequest(BaseModel):
