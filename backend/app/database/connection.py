@@ -21,8 +21,20 @@ def _async_database_url(url: str) -> str:
 
 
 DATABASE_URL = _async_database_url(settings.DATABASE_URL)
-engine = create_async_engine(DATABASE_URL, echo=settings.DEBUG, pool_pre_ping=True, pool_size=1, max_overflow=0, pool_recycle=300)
-AsyncSessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False, autoflush=False)
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=settings.DEBUG,
+    pool_pre_ping=True,
+    pool_size=1,
+    max_overflow=0,
+    pool_recycle=300,
+)
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autoflush=False,
+)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -46,10 +58,11 @@ async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Create tables for local development/tests. Production uses migrations."""
-    if settings.VERCEL or settings.APP_ENV.lower() in {"production", "prod", "vercel"}:
-        return
+    """Create missing tables for local development and serverless deployments.
 
+    create_all() is idempotent and only creates missing tables; schema migrations
+    remain the source of truth for controlled production schema changes.
+    """
     from app.models.anomaly import Anomaly, ThreatAnomalyLink  # noqa: F401
     from app.models.evidence import Evidence  # noqa: F401
     from app.models.forecast import Forecast  # noqa: F401
