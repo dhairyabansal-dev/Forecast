@@ -18,7 +18,6 @@ class Settings(BaseSettings):
     APP_NAME: str = "NetworkThreatForecast"
     APP_ENV: str = "development"
     DEBUG: bool = False
-    SECRET_KEY: str = ""
     VERCEL: bool = False
 
     API_V1_PREFIX: str = "/api/v1"
@@ -30,13 +29,6 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = ""
     SUPABASE_ANON_KEY: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
-
-    # Authentication
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 12
-    AUTH_COOKIE_NAME: str = "foreflow_session"
-    AUTH_COOKIE_SECURE: bool = False
-    ADMIN_EMAIL: str = ""
-    ADMIN_PASSWORD: str = ""
 
     ANOMALY_MODEL_PATH: str = str(PROJECT_ROOT / "ml_engine" / "saved_models" / "anomaly_model.pkl")
     TEMPORAL_MODEL_PATH: str = str(PROJECT_ROOT / "ml_engine" / "saved_models" / "temporal_model.pt")
