@@ -26,6 +26,11 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = ""
 
+    # Supabase
+    SUPABASE_URL: str = ""
+    SUPABASE_ANON_KEY: str = ""
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
+
     # Authentication
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 12
     AUTH_COOKIE_NAME: str = "foreflow_session"

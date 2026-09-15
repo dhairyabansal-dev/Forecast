@@ -3,8 +3,12 @@ from typing import Optional
 
 import joblib
 import numpy as np
-from sklearn.ensemble import IsolationForest
-from sklearn.preprocessing import StandardScaler
+try:
+    from sklearn.ensemble import IsolationForest
+    from sklearn.preprocessing import StandardScaler
+except ImportError:
+    IsolationForest = None
+    StandardScaler = None
 
 
 class AnomalyDetector:
@@ -20,14 +24,18 @@ class AnomalyDetector:
         max_samples: str | int = "auto",
         random_state: int = 42,
     ):
-        self.model = IsolationForest(
-            n_estimators=n_estimators,
-            contamination=contamination,
-            max_samples=max_samples,
-            random_state=random_state,
-            n_jobs=-1,
-        )
-        self.scaler = StandardScaler()
+        if IsolationForest is not None:
+            self.model = IsolationForest(
+                n_estimators=n_estimators,
+                contamination=contamination,
+                max_samples=max_samples,
+                random_state=random_state,
+                n_jobs=-1,
+            )
+            self.scaler = StandardScaler()
+        else:
+            self.model = None
+            self.scaler = None
         self._is_fitted = False
         self.metadata = {}
 

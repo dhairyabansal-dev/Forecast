@@ -1,5 +1,11 @@
-from eth_account import Account
-from web3 import Web3
+try:
+    from eth_account import Account
+    from web3 import Web3
+    WEB3_AVAILABLE = True
+except (ImportError, Exception):
+    Account = None
+    Web3 = None
+    WEB3_AVAILABLE = False
 
 from app.core.config import settings
 from app.utils.hashing import hash_json
@@ -28,11 +34,11 @@ class BlockchainService:
     """Anchor evidence content hashes on-chain for tamper-evident storage."""
 
     def __init__(self):
-        self.w3 = Web3(Web3.HTTPProvider(settings.BLOCKCHAIN_PROVIDER_URL))
+        self.w3 = Web3(Web3.HTTPProvider(settings.BLOCKCHAIN_PROVIDER_URL)) if Web3 is not None else None
         self._contract = None
         self._account = None
 
-        if settings.BLOCKCHAIN_PRIVATE_KEY:
+        if settings.BLOCKCHAIN_PRIVATE_KEY and Account is not None:
             try:
                 self._account = Account.from_key(settings.BLOCKCHAIN_PRIVATE_KEY)
             except (TypeError, ValueError) as exc:
@@ -40,7 +46,7 @@ class BlockchainService:
 
     @property
     def contract(self):
-        if self._contract is None and settings.THREAT_EVIDENCE_CONTRACT_ADDRESS:
+        if self._contract is None and settings.THREAT_EVIDENCE_CONTRACT_ADDRESS and self.w3 is not None:
             try:
                 address = Web3.to_checksum_address(
                     settings.THREAT_EVIDENCE_CONTRACT_ADDRESS.strip()
@@ -56,6 +62,8 @@ class BlockchainService:
         return self._contract
 
     def is_connected(self) -> bool:
+        if self.w3 is None:
+            return False
         try:
             return self.w3.is_connected()
         except Exception:

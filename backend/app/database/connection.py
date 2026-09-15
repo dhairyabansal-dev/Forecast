@@ -33,6 +33,9 @@ def _resolve_database_url() -> str:
     )
     for value in candidates:
         if value and value.strip():
+            # Skip placeholder templates
+            if any(p in value for p in ("YOUR_PROJECT_REF", "YOUR_DB_PASSWORD", "change_me", "USER:PASSWORD")):
+                continue
             return _async_database_url(value)
     return ""
 
@@ -114,8 +117,12 @@ async def init_db() -> None:
     from app.models.threat import Threat  # noqa: F401
     from app.models.user import AuditLog, User, UserSession  # noqa: F401
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as exc:
+        from app.utils.logger import app_logger
+        app_logger.warning("Database connection/init warning: %s", exc)
 
 
 async def close_db() -> None:
