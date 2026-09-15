@@ -1,6 +1,8 @@
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
+from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -20,25 +22,62 @@ def _async_database_url(url: str) -> str:
     return normalized
 
 
-DATABASE_URL = _async_database_url(settings.DATABASE_URL)
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=settings.DEBUG,
-    pool_pre_ping=True,
-    pool_size=1,
-    max_overflow=0,
-    pool_recycle=300,
+def _resolve_database_url() -> str:
+    """Resolve the database URL from the app setting or common Vercel Postgres names."""
+    candidates = (
+        settings.DATABASE_URL,
+        os.getenv("POSTGRES_URL", ""),
+        os.getenv("POSTGRES_URL_NON_POOLING", ""),
+        os.getenv("POSTGRES_PRISMA_URL", ""),
+    )
+    for value in candidates:
+        if value and value.strip():
+            return _async_database_url(value)
+    return ""
+
+
+DATABASE_URL = _resolve_database_url()
+
+# Do not construct SQLAlchemy's engine with an empty URL. That raises during
+# module import and makes Vercel report the misleading "could not import
+# api/index.py" error. The engine is created only when a database is configured.
+engine = (
+    create_async_engine(
+        DATABASE_URL,
+        echo=settings.DEBUG,
+        pool_pre_ping=True,
+        pool_size=1,
+        max_overflow=0,
+        pool_recycle=300,
+    )
+    if DATABASE_URL
+    else None
 )
-AsyncSessionLocal = async_sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False,
+
+AsyncSessionLocal = (
+    async_sessionmaker(
+        bind=engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autoflush=False,
+    )
+    if engine is not None
+    else None
 )
+
+
+def _require_database() -> async_sessionmaker[AsyncSession]:
+    if AsyncSessionLocal is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is not configured. Set DATABASE_URL in the deployment environment.",
+        )
+    return AsyncSessionLocal
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSessionLocal() as session:
+    session_factory = _require_database()
+    async with session_factory() as session:
         try:
             yield session
         except Exception:
@@ -48,7 +87,8 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 @asynccontextmanager
 async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSessionLocal() as session:
+    session_factory = _require_database()
+    async with session_factory() as session:
         try:
             yield session
             await session.commit()
@@ -58,11 +98,10 @@ async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Create missing tables for local development and serverless deployments.
+    """Create missing tables for local development and serverless deployments."""
+    if engine is None:
+        return
 
-    create_all() is idempotent and only creates missing tables; schema migrations
-    remain the source of truth for controlled production schema changes.
-    """
     from app.models.anomaly import Anomaly, ThreatAnomalyLink  # noqa: F401
     from app.models.evidence import Evidence  # noqa: F401
     from app.models.forecast import Forecast  # noqa: F401
@@ -74,4 +113,5 @@ async def init_db() -> None:
 
 
 async def close_db() -> None:
-    await engine.dispose()
+    if engine is not None:
+        await engine.dispose()
